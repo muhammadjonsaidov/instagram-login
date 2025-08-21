@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: instagram-login
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+facebook:
+  client-id: ${FACEBOOK_CLIENT_ID}
+  client-secret: ${FACEBOOK_CLIENT_SECRET}
+  redirect-uri: ${FACEBOOK_REDIRECT_URI}
+  scope: instagram_basic,pages_show_list
+  api:
+    authorization-uri: https://www.facebook.com/v23.0/dialog/oauth
+    token-uri: https://graph.facebook.com/v23.0/oauth/access_token
+    me-accounts-uri: https://graph.facebook.com/me/accounts
+
+instagram:
+  api:
+    user-profile-uri: https://graph.facebook.com/v23.0/

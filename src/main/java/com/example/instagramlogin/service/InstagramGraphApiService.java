@@ -1,13 +1,23 @@
 package com.example.instagramlogin.service;
 
-import com.example.instagramlogin.model.FacebookAccessTokenResponse;
-import com.example.instagramlogin.model.FacebookPagesResponse;
-import com.example.instagramlogin.model.InstagramUserProfile;
+import com.example.instagramlogin.dto.InstagramProfileDTO;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
+
+import java.net.URI;
+
+record FacebookAccessTokenResponse(String access_token) {
+}
+
+record FacebookPagesResponse(java.util.List<Page> data) {
+}
+
+record Page(String id, String name) {
+}
 
 @Service
 public class InstagramGraphApiService {
@@ -39,52 +49,48 @@ public class InstagramGraphApiService {
                         .queryParam("redirect_uri", redirectUri)
                         .queryParam("code", code)
                         .build())
-                .retrieve()
-                .bodyToMono(FacebookAccessTokenResponse.class)
-                .map(FacebookAccessTokenResponse::getAccessToken);
+                .retrieve().bodyToMono(FacebookAccessTokenResponse.class)
+                .map(FacebookAccessTokenResponse::access_token);
     }
 
     public Mono<String> getInstagramAccountId(String accessToken) {
         return webClient.get()
-                .uri(meAccountsUri, uriBuilder -> uriBuilder
-                        .queryParam("access_token", accessToken)
-                        .build())
-                .retrieve()
-                .bodyToMono(FacebookPagesResponse.class)
+                .uri(meAccountsUri, uriBuilder -> uriBuilder.queryParam("access_token", accessToken).build())
+                .retrieve().bodyToMono(FacebookPagesResponse.class)
                 .flatMap(response -> {
-                    if (response.getData() == null || response.getData().isEmpty()) {
+                    if (response.data() == null || response.data().isEmpty()) {
                         return Mono.error(new RuntimeException("User does not manage any Facebook Pages."));
                     }
-                    String firstPageId = response.getData().getFirst().getId();
-
+                    String firstPageId = response.data().getFirst().id();
                     return webClient.get()
                             .uri(userProfileUri + firstPageId, uriBuilder -> uriBuilder
                                     .queryParam("fields", "instagram_business_account")
-                                    .queryParam("access_token", accessToken)
-                                    .build())
-                            .retrieve()
-                            .bodyToMono(JsonNode.class)
+                                    .queryParam("access_token", accessToken).build())
+                            .retrieve().bodyToMono(JsonNode.class)
                             .flatMap(jsonNode -> {
                                 if (jsonNode.has("instagram_business_account") && jsonNode.get("instagram_business_account").has("id")) {
-                                    String instagramId = jsonNode.get("instagram_business_account").get("id").asText();
-                                    return Mono.just(instagramId);
+                                    return Mono.just(jsonNode.get("instagram_business_account").get("id").asText());
                                 } else {
-                                    return Mono.error(new RuntimeException("The first page ('" + response.getData().getFirst().getName() + "') is not connected to an Instagram Business Account."));
+                                    return Mono.error(new RuntimeException("The first page ('" + response.data().getFirst().name() + "') is not connected to an Instagram Business Account."));
                                 }
                             });
                 });
     }
 
-    public Mono<InstagramUserProfile> getUserProfile(String instagramAccountId, String accessToken) {
-        String fields = "id,username,name,biography,followers_count,profile_picture_url";
-        String uri = userProfileUri + instagramAccountId;
+    public Mono<InstagramProfileDTO> getUserProfile(String instagramAccountId, String accessToken) {
+        String fields = "id,username,name,biography,followers_count,profile_picture_url,media{id,media_url,caption,like_count,comments_count,timestamp,permalink}";
+
+        // URL'ni xavfsiz usulda, UriComponentsBuilder yordamida quramiz
+        URI uri = UriComponentsBuilder.fromUriString(userProfileUri)
+                .path(instagramAccountId)
+                .queryParam("fields", fields)
+                .queryParam("access_token", accessToken)
+                .build()
+                .toUri();
 
         return webClient.get()
-                .uri(uri, uriBuilder -> uriBuilder
-                        .queryParam("fields", fields)
-                        .queryParam("access_token", accessToken)
-                        .build())
+                .uri(uri) // Tayyor va xavfsiz URI'ni ishlatamiz
                 .retrieve()
-                .bodyToMono(InstagramUserProfile.class);
+                .bodyToMono(InstagramProfileDTO.class);
     }
 }
