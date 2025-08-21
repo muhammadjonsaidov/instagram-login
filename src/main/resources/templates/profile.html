@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Profil</title>
+</head>
+<body>
+<h1>Profil ma'lumotlari</h1>
+<div th:if="${profile}">
+    <img th:src="${profile.profilePictureUrl}" alt="Profile Picture" width="150">
+    <p><strong>Username:</strong> <span th:text="${profile.username}"></span></p>
+    <p><strong>ID:</strong> <span th:text="${profile.id}"></span></p>
+    <p><strong>Full Name:</strong> <span th:text="${profile.name}"></span></p>
+    <p><strong>Followers:</strong> <span th:text="${profile.followersCount}"></span></p>
+    <p><strong>Biography:</strong></p>
+    <pre th:text="${profile.biography}"></pre>
+</div>
+<a href="/">Bosh sahifaga qaytish</a>
+</body>
+</html>
