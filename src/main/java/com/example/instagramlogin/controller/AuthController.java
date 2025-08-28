@@ -1,9 +1,11 @@
 package com.example.instagramlogin.controller;
 
+import com.example.instagramlogin.dto.InstagramProfileDTO;
 import com.example.instagramlogin.dto.UserResponseDTO;
 import com.example.instagramlogin.model.User;
 import com.example.instagramlogin.service.InstagramGraphApiService;
 import com.example.instagramlogin.service.UserService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Controller
 @RequiredArgsConstructor
@@ -49,9 +52,16 @@ public class AuthController {
     public String facebookCallback(@RequestParam("code") String code, Model model) {
         return instagramGraphApiService.getAccessToken(code)
                 .flatMap(token -> instagramGraphApiService.getInstagramAccountId(token)
-                        .flatMap(igAccountId -> instagramGraphApiService.getUserProfile(igAccountId, token))
+                        .flatMap(igAccountId -> instagramGraphApiService.getUserProfile(igAccountId, token)
+                                .flatMap(userProfile -> {
+                                    Mono<JsonNode> insightsMono = instagramGraphApiService.getAccountInsights(userProfile.getId(), token);
+                                    return Mono.zip(Mono.just(userProfile), insightsMono);
+                                }))
                 )
-                .map(userProfile -> {
+                .publishOn(Schedulers.boundedElastic())
+                .map(tuple -> {
+                    InstagramProfileDTO userProfile = tuple.getT1();
+                    JsonNode insights = tuple.getT2();
                     User savedUser = userService.processOAuthUser(userProfile);
                     // Entity'ni Response DTO'ga o'tkazamiz
                     UserResponseDTO userResponse = UserResponseDTO.builder()
@@ -64,7 +74,7 @@ public class AuthController {
                             .media(userProfile.getMedia()) // Media ma'lumotlarini ham qo'shamiz
                             .build();
 
-                    model.addAttribute("user", userResponse);
+                    model.addAttribute("insights", insights);
 
                     return "profile";
                 })

@@ -40,6 +40,16 @@
         <h2 class="mb-4">Instagram Postlari</h2>
         <div class="row">
             <div class="col-md-4 mb-4" th:each="post : ${user.media.data}">
+
+                <div class="card mt-4">
+                    <div class="card-header">So'nggi 24 soatlik statistika</div>
+                    <div class="card-body" th:if="${insights}">
+                        <p>Ko'rsatuvlar (Impressions): <span th:text="${insights.get('data').get(0).get('values').get(0).get('value')}"></span></p>
+                        <p>Qamrov (Reach): <span th:text="${insights.get('data').get(1).get('values').get(0).get('value')}"></span></p>
+                        <!-- va hokazo -->
+                    </div>
+                </div>
+
                 <div class="card h-100">
                     <img th:src="${post.media_url}" class="card-img-top" alt="Instagram Post">
                     <div class="card-body">

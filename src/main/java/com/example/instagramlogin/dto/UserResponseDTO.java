@@ -3,6 +3,8 @@ package com.example.instagramlogin.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 @Builder // Ob'ektni oson yaratish uchun
 public class UserResponseDTO {
@@ -13,5 +15,7 @@ public class UserResponseDTO {
     private String profilePictureUrl;
     private String biography;
 
-    private MediaDTO media;
+    Map<String, Integer> accountStatistics;
+
+//    private MediaDTO media;
 }

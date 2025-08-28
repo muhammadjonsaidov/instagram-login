@@ -22,7 +22,7 @@ facebook:
   client-id: ${FACEBOOK_CLIENT_ID}
   client-secret: ${FACEBOOK_CLIENT_SECRET}
   redirect-uri: ${FACEBOOK_REDIRECT_URI}
-  scope: instagram_basic,pages_show_list
+  scope: instagram_basic,pages_show_list,instagram_manage_insights,business_management
   api:
     authorization-uri: https://www.facebook.com/v23.0/dialog/oauth
     token-uri: https://graph.facebook.com/v23.0/oauth/access_token

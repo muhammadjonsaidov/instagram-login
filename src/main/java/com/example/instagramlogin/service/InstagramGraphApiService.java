@@ -93,4 +93,36 @@ public class InstagramGraphApiService {
                 .retrieve()
                 .bodyToMono(InstagramProfileDTO.class);
     }
+
+    public Mono<JsonNode> getAccountInsights(String instagramAccountId, String accessToken) {
+        // Bizga qaysi metrikalar kerakligini va qaysi davr uchun kerakligini ko'rsatamiz
+        String metric = "impressions,reach,follower_count,profile_views";
+        String period = "28_days"; // day, week, 28_days
+
+        String uri = userProfileUri + instagramAccountId + "/insights";
+
+        return webClient.get()
+                .uri(uri, uriBuilder -> uriBuilder
+                        .queryParam("metric", metric)
+                        .queryParam("period", period)
+                        .queryParam("access_token", accessToken)
+                        .build())
+                .retrieve()
+                .bodyToMono(JsonNode.class);
+    }
+
+    public Mono<JsonNode> getMediaInsights(String mediaId, String accessToken) {
+        // Bitta post uchun qaysi metrikalar kerak
+        String metric = "engagement,impressions,reach,saved";
+
+        String uri = userProfileUri + mediaId + "/insights";
+
+        return webClient.get()
+                .uri(uri, uriBuilder -> uriBuilder
+                        .queryParam("metric", metric)
+                        .queryParam("access_token", accessToken)
+                        .build())
+                .retrieve()
+                .bodyToMono(JsonNode.class);
+    }
 }

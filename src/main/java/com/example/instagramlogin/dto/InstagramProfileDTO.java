@@ -14,5 +14,5 @@ public class InstagramProfileDTO {
     @JsonProperty("profile_picture_url")
     private String profilePictureUrl;
 
-    private MediaDTO media;
+//    private MediaDTO media;
 }
