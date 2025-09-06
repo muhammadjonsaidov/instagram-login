@@ -16,9 +16,10 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        cacheManager.setAsyncCacheMode(true);
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(1000)
-                .expireAfterWrite(Duration.ofMinutes(30))
+                .expireAfterWrite(Duration.ofSeconds(30))
                 .recordStats());
         return cacheManager;
     }
