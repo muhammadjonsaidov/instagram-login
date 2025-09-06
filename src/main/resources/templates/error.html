@@ -2,18 +2,74 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Xatolik</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style> body { background-color: #f8f9fa; } </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Instagram Business Discovery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .error-section {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .error-icon {
+            font-size: 5rem;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
-<div class="container mt-5">
-    <div class="alert alert-danger p-5">
-        <h1 class="alert-heading">Xatolik yuz berdi!</h1>
-        <p th:text="${error}">Nimadir noto'g'ri ketdi.</p>
-        <hr>
-        <a href="/" class="btn btn-secondary">Bosh sahifaga qaytish</a>
-    </div>
-</div>
+    <section class="error-section">
+        <div class="container">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-6">
+                    <div class="error-icon mb-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 class="display-4 fw-bold mb-4">Oops! Something went wrong</h1>
+                    <p class="lead mb-4" th:text="${error}">
+                        An unexpected error occurred while processing your request.
+                    </p>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="/" class="btn btn-light btn-lg">
+                            <i class="fas fa-home me-2"></i>
+                            Go Home
+                        </a>
+                        <button onclick="history.back()" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Go Back
+                        </button>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <h5>Common Issues:</h5>
+                        <ul class="list-unstyled mt-3">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Make sure your Instagram account is a Business or Creator account
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Verify that your Facebook Page is connected to an Instagram Business account
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Check if the target username exists and is a public business account
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Ensure you haven't exceeded the hourly rate limit (200 searches/hour)
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
