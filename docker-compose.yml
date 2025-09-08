@@ -1,10 +1,9 @@
-version: '3.8'
 
 services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: instagram_postgres_db
+    container_name: instagram_login_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -17,7 +16,7 @@ services:
 
   app:
     build: .
-    container_name: instagram_app
+    container_name: instagram_login_app
     depends_on:
       - postgres
     ports:
@@ -29,6 +28,7 @@ services:
       - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
       - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
       - FACEBOOK_REDIRECT_URI=${FACEBOOK_REDIRECT_URI}
+      - INSTAGRAM_RATE_LIMIT=${INSTAGRAM_RATE_LIMIT}
 
 volumes:
   postgres_data:

@@ -3,11 +3,11 @@ server:
 
 spring:
   application:
-    name: instagram-business-discovery
+    name: instagram-login-app
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/instagram_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -24,9 +24,9 @@ spring:
 
 # Facebook/Instagram API Configuration
 facebook:
-  client-id: ${FACEBOOK_CLIENT_ID:1103297224667492}
-  client-secret: ${FACEBOOK_CLIENT_SECRET:1e4e75cfc8f09557931bc46bcf816ad1}
-  redirect-uri: ${FACEBOOK_REDIRECT_URI:https://cccc3482513c.ngrok-free.app/facebook/callback}
+  client-id: ${FACEBOOK_CLIENT_ID}
+  client-secret: ${FACEBOOK_CLIENT_SECRET}
+  redirect-uri: ${FACEBOOK_REDIRECT_URI}
   scope: instagram_basic,pages_show_list,instagram_manage_insights,business_management
   api:
     authorization-uri: https://www.facebook.com/v23.0/dialog/oauth
@@ -39,7 +39,7 @@ instagram:
     base-url: https://graph.facebook.com/v23.0
     business-discovery:
       enabled: true
-      rate-limit: 200 # requests per hour
+      rate-limit: ${INSTAGRAM_RATE_LIMIT} # requests per hour
 
 logging:
   level:

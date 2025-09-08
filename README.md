@@ -23,8 +23,8 @@ Bu loyiha Instagram Business API yordamida boshqa foydalanuvchilarning statistik
 
 ### 1. Talablar
 
-- Java 17+
-- PostgreSQL 12+
+- Java 21
+- PostgreSQL 16-alpine
 - Maven 3.6+
 - Facebook Developer Account
 - Instagram Business Account
@@ -34,44 +34,38 @@ Bu loyiha Instagram Business API yordamida boshqa foydalanuvchilarning statistik
 1. [Facebook Developers](https://developers.facebook.com/) saytiga kiring
 2. Yangi app yarating
 3. Instagram Basic Display mahsulotini qo'shing
-4. OAuth Redirect URI ni qo'shing: `http://localhost:8080/facebook/callback`
+4. OAuth Redirect URI ni qo'shing: `https://************.ngrok-free.app/facebook/callback`
 5. App ID va App Secret ni oling
 
-### 3. Database Sozlash
-
-```sql
-CREATE DATABASE instagram_business_discovery;
-CREATE USER user WITH PASSWORD 'password';
-GRANT ALL PRIVILEGES ON DATABASE instagram_business_discovery TO user;
-```
-
-### 4. Environment Variables
+### 3. Environment Variables
 
 `.env` faylini tahrirlang:
 
 ```env
-# Database
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/instagram_business_discovery
-SPRING_DATASOURCE_USERNAME=user
-SPRING_DATASOURCE_PASSWORD=password
+# PostgreSQL Database Configuration
+POSTGRES_DB=your_db
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
 
-# Facebook/Instagram API
-FACEBOOK_CLIENT_ID=your_app_id
-FACEBOOK_CLIENT_SECRET=your_app_secret
-FACEBOOK_REDIRECT_URI=http://localhost:8080/facebook/callback
+# Ngrok Configuration (for local development)
+NGROK_AUTHTOKEN=****************** # ngrok auth token
+
+# Facebook/Instagram API Configuration
+FACEBOOK_CLIENT_ID=facebook_app_id
+FACEBOOK_CLIENT_SECRET=facebook_app_secret
+FACEBOOK_REDIRECT_URI=https://************.ngrok-free.app/facebook/callback
+
+# Instagram Business Discovery Settings
+INSTAGRAM_RATE_LIMIT=200 # o'zgartirish mumkin
 ```
 
-### 5. Loyihani Ishga Tushirish
+### 4. Ishga tushurish
 
-```bash
-# Dependencies o'rnatish
-mvn clean install
-
-# Ilovani ishga tushirish
-mvn spring-boot:run
+```
+docker compose up --build -d
 ```
 
-Ilova `http://localhost:8080` da ishga tushadi.
+Ilova `https://************.ngrok-free.app` da ishga tushadi.
 
 ## Foydalanish
 

@@ -19,7 +19,7 @@ public class CacheConfig {
         cacheManager.setAsyncCacheMode(true);
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(1000)
-                .expireAfterWrite(Duration.ofSeconds(30))
+                .expireAfterWrite(Duration.ofSeconds(60))
                 .recordStats());
         return cacheManager;
     }
@@ -28,6 +28,6 @@ public class CacheConfig {
     public Caffeine<Object, Object> caffeineConfig() {
         return Caffeine.newBuilder()
                 .maximumSize(1000)
-                .expireAfterWrite(Duration.ofMinutes(30));
+                .expireAfterWrite(Duration.ofSeconds(60));
     }
 }
