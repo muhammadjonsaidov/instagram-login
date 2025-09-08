@@ -65,7 +65,10 @@ public class BusinessDiscoveryDto {
         
         @JsonProperty("comments_count")
         private Integer commentsCount;
-        
+
+        @JsonProperty("saved_count")
+        private Integer savedCount; // Yangi maydon
+
         private String timestamp;
         private String permalink;
         
@@ -85,7 +88,10 @@ public class BusinessDiscoveryDto {
         
         @JsonProperty("total_likes")
         private Long totalLikes;
-        
+
+        @JsonProperty("total_saves")
+        private long totalSaves; // Yangi maydon
+
         @JsonProperty("total_comments")
         private Long totalComments;
         

@@ -3,6 +3,7 @@ package com.instagram.businessdiscovery.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.instagram.businessdiscovery.dto.BusinessDiscoveryDto;
 import com.instagram.businessdiscovery.dto.InstagramProfileDto;
+import com.instagram.businessdiscovery.dto.MediaEngagementDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,6 +15,10 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -193,8 +198,8 @@ public class InstagramApiService {
     public Mono<BusinessDiscoveryDto> getBusinessDiscoveryWithMedia(String instagramAccountId, String targetUsername, String accessToken) {
         log.debug("Getting business discovery with media for: {}", targetUsername);
 
-        String mediaFields = "id,media_url,media_type,caption,like_count,comments_count,timestamp,permalink";
-        String fields = "id,username,name,biography,followers_count,follows_count,media_count,profile_picture_url,website,media{" + mediaFields + "}";
+        String mediaFields = "id,media_url,media_type,caption,like_count,comments_count,timestamp,permalink,insights.metric(saved).period(lifetime)";
+        String fields = "id,username,name,biography,followers_count,media_count,profile_picture_url,website,media{" + mediaFields + "}";
 
         URI uri = UriComponentsBuilder.fromUriString(instagramApiBaseUrl)
                 .path("/" + instagramAccountId)
@@ -251,10 +256,24 @@ public class InstagramApiService {
                         .permalink(getTextValue(mediaItem, "permalink"))
                         .build();
 
+                Integer savedCount = 0;
+                JsonNode insightsNode = mediaItem.get("insights");
+                if (insightsNode != null && insightsNode.has("data")) {
+                    for (JsonNode metricNode : insightsNode.get("data")) {
+                        if ("saved".equals(getTextValue(metricNode, "name"))) {
+                            savedCount = metricNode.get("values").get(0).get("value").asInt();
+                            break;
+                        }
+                    }
+                }
+                mediaDto.setSavedCount(savedCount); // (Buning uchun DTO'ga yangi maydon qo'shish kerak)
+
+
                 // Calculate engagement rate
                 if (dto.getFollowersCount() != null && dto.getFollowersCount() > 0) {
                     int totalEngagement = (mediaDto.getLikeCount() != null ? mediaDto.getLikeCount() : 0) +
-                            (mediaDto.getCommentsCount() != null ? mediaDto.getCommentsCount() : 0);
+                            (mediaDto.getCommentsCount() != null ? mediaDto.getCommentsCount() : 0) +
+                            savedCount; // "saved" ni qo'shdik
                     double engagementRate = (double) totalEngagement / dto.getFollowersCount() * 100;
                     mediaDto.setEngagementRate(engagementRate);
                 }
@@ -280,6 +299,10 @@ public class InstagramApiService {
                 .mapToLong(media -> media.getLikeCount() != null ? media.getLikeCount() : 0)
                 .sum();
 
+        long totalSaves = mediaList.stream()
+                .mapToLong(media -> media.getSavedCount() != null ? media.getSavedCount() : 0)
+                .sum();
+
         long totalComments = mediaList.stream()
                 .mapToLong(media -> media.getCommentsCount() != null ? media.getCommentsCount() : 0)
                 .sum();
@@ -293,10 +316,101 @@ public class InstagramApiService {
         return BusinessDiscoveryDto.AccountInsightsDto.builder()
                 .averageEngagementRate(averageEngagementRate)
                 .totalLikes(totalLikes)
+                .totalSaves(totalSaves) // Yangi maydon
                 .totalComments(totalComments)
                 .postsLast30Days(mediaList.size())
                 .build();
     }
+    /**
+     * Get user's own media IDs within a specific date range.
+     * Uses UNIX timestamps for since/until as required by Instagram API.
+     */
+    public Mono<List<String>> getMediaIdsInDateRange(String instagramAccountId, String accessToken, LocalDate since, LocalDate until) {
+        log.debug("Getting media IDs for account {} from {} to {}", instagramAccountId, since, until);
+
+        long sinceTimestamp = since.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+        long untilTimestamp = until.plusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC); // Keyingi kunning boshigacha
+
+        URI uri = UriComponentsBuilder.fromUriString(instagramApiBaseUrl)
+                .pathSegment(instagramAccountId, "media")
+                .queryParam("access_token", accessToken)
+                .queryParam("since", sinceTimestamp)
+                .queryParam("until", untilTimestamp)
+                .queryParam("limit", 100)
+                .build()
+                .toUri();
+
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(response -> {
+                    List<String> ids = new ArrayList<>();
+                    if (response.has("data")) {
+                        for (JsonNode item : response.get("data")) {
+                            ids.add(item.get("id").asText());
+                        }
+                    }
+                    return ids;
+                });
+    }
+
+    /**
+     * Get user's own media within a specific date range.
+     */
+    public Mono<JsonNode> getMediaInDateRange(String instagramAccountId, String accessToken, String since, String until) {
+        log.debug("Getting media for account {} from {} to {}", instagramAccountId, since, until);
+
+        URI uri = UriComponentsBuilder.fromUriString(instagramApiBaseUrl)
+                .pathSegment(instagramAccountId, "media")
+                .queryParam("access_token", accessToken)
+                .queryParam("since", since)
+                .queryParam("until", until)
+                .queryParam("limit", 100) // 100 tagacha post olish
+                .build()
+                .toUri();
+
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(JsonNode.class);
+    }
+
+    /**
+     * Get detailed engagement for a single media item.
+     */
+    public Mono<MediaEngagementDetails> getMediaDetails(String mediaId, String accessToken) {
+        String fields = "id,like_count,comments_count,insights.metric(saved).period(lifetime)";
+
+        URI uri = UriComponentsBuilder.fromUriString(instagramApiBaseUrl)
+                .path("/" + mediaId)
+                .queryParam("fields", fields)
+                .queryParam("access_token", accessToken)
+                .build()
+                .toUri();
+
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(item -> {
+                    int savedCount = 0;
+                    JsonNode insightsNode = item.get("insights");
+                    if (insightsNode != null && insightsNode.has("data")) {
+                        JsonNode data = insightsNode.get("data");
+                        if (data.isArray() && !data.isEmpty()) {
+                            savedCount = data.get(0).get("values").get(0).get("value").asInt();
+                        }
+                    }
+                    return MediaEngagementDetails.builder()
+                            .id(getTextValue(item, "id"))
+                            .likeCount(getIntValue(item, "like_count"))
+                            .commentsCount(getIntValue(item, "comments_count"))
+                            .savedCount(savedCount)
+                            .build();
+                });
+    }
+
 
     // Helper methods for safe JSON parsing
     private String getTextValue(JsonNode node, String fieldName) {

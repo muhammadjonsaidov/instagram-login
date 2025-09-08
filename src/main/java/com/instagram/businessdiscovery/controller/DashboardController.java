@@ -1,6 +1,7 @@
 package com.instagram.businessdiscovery.controller;
 
 import com.instagram.businessdiscovery.domain.User;
+import com.instagram.businessdiscovery.dto.AccountAnalysisDto;
 import com.instagram.businessdiscovery.service.BusinessDiscoveryService;
 import com.instagram.businessdiscovery.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Controller
@@ -57,5 +59,31 @@ public class DashboardController {
 
         model.addAttribute("user", userOpt.get());
         return "profile";
+    }
+    @GetMapping("/analysis")
+    public String analysisPage(@RequestParam("userId") Long userId, Model model) {
+        Optional<User> userOpt = userService.findById(userId);
+        if (userOpt.isEmpty()) {
+            model.addAttribute("error", "User not found");
+            return "error";
+        }
+        User user = userOpt.get();
+
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(30); // Oxirgi 30 kun
+
+        try {
+            // Servis metodini chaqirish va natijani kutish
+            AccountAnalysisDto analysis = businessDiscoveryService.analyzeOwnAccount(user, startDate, endDate).block();
+
+            model.addAttribute("user", user);
+            model.addAttribute("analysis", analysis);
+
+        } catch (Exception e) {
+            log.error("Failed to analyze account for user {}: {}", userId, e.getMessage());
+            model.addAttribute("error", "Could not analyze account. Please ensure your Instagram account is properly connected and has recent posts.");
+        }
+
+        return "account-analysis"; // Yangi HTML sahifa
     }
 }

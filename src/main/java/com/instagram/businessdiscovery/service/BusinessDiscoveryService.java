@@ -4,15 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instagram.businessdiscovery.domain.BusinessDiscoverySearch;
 import com.instagram.businessdiscovery.domain.User;
+import com.instagram.businessdiscovery.dto.AccountAnalysisDto;
 import com.instagram.businessdiscovery.dto.BusinessDiscoveryDto;
+import com.instagram.businessdiscovery.dto.MediaEngagementDetails;
 import com.instagram.businessdiscovery.repository.BusinessDiscoverySearchRepository;
+import lombok.Builder;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -182,8 +188,71 @@ public class BusinessDiscoveryService {
                 .build();
     }
 
-    @lombok.Data
-    @lombok.Builder
+    /**
+     * Get user's own profile analysis for a specific period.
+     */
+    @Transactional(readOnly = true)
+    public Mono<AccountAnalysisDto> analyzeOwnAccount(User user, LocalDate startDate, LocalDate endDate) {
+
+        return instagramApiService.getUserProfile(user.getInstagramId(), user.getAccessToken())
+                .flatMap(profile -> {
+                    final long followersCount = profile.getFollowersCount() != null ? profile.getFollowersCount() : 0;
+
+                    // Agar obunachi bo'lmasa, bo'sh natija qaytaramiz
+                    if (followersCount == 0) {
+                        return Mono.just(AccountAnalysisDto.builder()
+                                .followersAtTimeOfAnalysis(0)
+                                .startDate(startDate)
+                                .endDate(endDate)
+                                .build());
+                    }
+
+                    // 1. Davr bo'yicha post ID'larini olamiz
+                    return instagramApiService.getMediaIdsInDateRange(user.getInstagramId(), user.getAccessToken(), startDate, endDate)
+                            .flatMap(mediaIds -> {
+                                if (mediaIds.isEmpty()) {
+                                    return Mono.just(AccountAnalysisDto.builder()
+                                            .postCount(0)
+                                            .followersAtTimeOfAnalysis(followersCount)
+                                            .startDate(startDate)
+                                            .endDate(endDate)
+                                            .build());
+                                }
+
+                                // 2. Har bir post uchun engagement'ni olamiz (N+1 so'rov)
+                                // concatMap API rate limitiga tushib qolmaslik uchun so'rovlarni ketma-ket yuboradi
+                                return Flux.fromIterable(mediaIds)
+                                        .concatMap(mediaId -> instagramApiService.getMediaDetails(mediaId, user.getAccessToken()))
+                                        .collectList()
+                                        .map(engagementDetailsList -> {
+                                            // 3. Barcha ma'lumotlarni yig'ib, hisob-kitob qilamiz
+                                            long totalLikes = engagementDetailsList.stream().mapToLong(MediaEngagementDetails::getLikeCount).sum();
+                                            long totalComments = engagementDetailsList.stream().mapToLong(MediaEngagementDetails::getCommentsCount).sum();
+                                            long totalSaves = engagementDetailsList.stream().mapToLong(MediaEngagementDetails::getSavedCount).sum();
+                                            long totalEngagements = totalLikes + totalComments + totalSaves;
+
+                                            int postCount = engagementDetailsList.size();
+                                            double averageEngagementPerPost = (double) totalEngagements / postCount;
+                                            double averageER = (averageEngagementPerPost / followersCount) * 100;
+
+                                            // 4. Natijani DTO ga joylaymiz
+                                            return AccountAnalysisDto.builder()
+                                                    .postCount(postCount)
+                                                    .totalLikes(totalLikes)
+                                                    .totalComments(totalComments)
+                                                    .totalSaves(totalSaves)
+                                                    .averageEngagementRate(averageER)
+                                                    .followersAtTimeOfAnalysis(followersCount)
+                                                    .startDate(startDate)
+                                                    .endDate(endDate)
+                                                    .build();
+                                        });
+                            });
+                });
+    }
+
+    @Data
+    @Builder
     public static class SearchStatistics {
         private long totalSearches;
         private long successfulSearches;
@@ -191,4 +260,14 @@ public class BusinessDiscoveryService {
         private long recentSearches;
         private long remainingSearches;
     }
+
+    /*@Data
+    @Builder
+    public static class AccountAnalysisDto {
+        private int postCount;
+        private long totalLikes;
+        private long totalComments;
+        private long totalSaves;
+        private double averageEngagementRate;
+    }*/
 }
