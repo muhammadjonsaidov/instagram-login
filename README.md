@@ -13,7 +13,7 @@ Bu loyiha Instagram Business API yordamida boshqa foydalanuvchilarning statistik
 
 ## Texnologiyalar
 
-- **Backend**: Spring Boot 3.2.0, Java 17
+- **Backend**: Spring Boot 3.5.5, Java 17
 - **Database**: PostgreSQL
 - **Frontend**: Thymeleaf, Bootstrap 5, JavaScript
 - **Cache**: Caffeine Cache
